@@ -38,6 +38,7 @@
 
 ::github{repo="saicaca/fuwari"}
 
+<<<<<<< HEAD
 
 ## 📫 联系方式
 
@@ -47,6 +48,9 @@
 - **Email**:[dinghuiliao4@gmail.com](mailto:dinghuiliao4@gmail.com)
 - **QQ：[3089736016](https://qm.qq.com/q/f7Ir5x96Ks)**
 - **TG：[@huizzz01](t.me/huizzz01)**
+=======
+---
+>>>>>>> upstream/master
 
 *感谢你的来访！希望在这里能找到对你有用的内容！*
 
