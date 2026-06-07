@@ -96,7 +96,7 @@ make menuconfig
 **Subtarget**: MT7621 based boards  
 **Target Profile**: Xiaomi Mi Router 3G  
 **Target Images**:![镜像选择](/assets/images/openwrt_1st/images.png "")  
-**LUCI**——>**Applications**——>**luci-app-mwan3**  
+**LUCI**--->**Applications**--->**luci-app-mwan3**  
 
 退出保存
 
@@ -148,7 +148,7 @@ ip link
 
 2. 创建虚拟网口
 
-- 来到路由器web界面，选择**网络**——>**接口**，删除当前所有的wan口
+- 来到路由器web界面，选择**网络**--->**接口**，删除当前所有的wan口
 - 选择上方**设备**选项，点击左下角**添加设备配置...**
 - 建立虚拟网口，**MAC地址**要手动设置一个
 ![vwan1st](/assets/images/openwrt_1st/vwan1st.png "")
@@ -161,7 +161,7 @@ ip link
 ![成功效果](/assets/images/openwrt_1st/vwan6th.png)
 ### 负载均衡
 
-- 来到**网络**——>**MultiWAN管理器**，
+- 来到**网络**--->**MultiWAN管理器**，
 - 在**接口**界面添加网口，选择启用和公共DNS服务器进行在线检测
 ![添加接口](/assets/images/openwrt_1st/mwan1.png)
 - 在**成员**界面添加虚拟wan口，跃点数和权重全部设置为**1**
@@ -186,4 +186,4 @@ curl --interface vwan1 "账号1请求内容"
 curl --interface vwan2 "账号2请求内容"
 ```
 
-在**系统**——>**启动项**——>**本地启动脚本**界面，在**exit 0**前添加curl指令，可实现开机自动登录
+在**系统**--->**启动项**--->**本地启动脚本**界面，在**exit 0**前添加curl指令，可实现开机自动登录
