@@ -1,0 +1,189 @@
+---
+title: OpenWrt固件编译和校园网聚合
+published: 2026-06-07
+description: 快，准，狠
+image: api
+tags: [OpenWrt, 教程]
+category: 软路由
+draft: false
+slug: openwrt-1st
+---
+
+# 为什么要使用OpenWrt路由器
+
+- 不想每天重新登录Wi-Fi
+- 不想被限制设备数量，可以给室友一起用
+- 可以使用科学上网、内网穿透等功能
+- 找不到事做（bushi
+
+# 我的设备选择
+
+**我的选择要求**：
+
+- 便宜
+- 刷机救砖方法成熟
+- 性能够用就行
+
+最后选择了搭载MT7621的**小米R3G v1**版本，带了一个**USB 3.0**接口，有**breed web**这个bootloader防砖
+
+# 刷机
+
+## 固件编译
+
+### 编译准备
+
+我比较推荐**ImmortalWrt**，版本选用使用opkg包管理器的**24.10**分支版本，因为我采取的刷机方法对25.12分支版本有bug  
+ImmortalWrt更适合中国大陆用户使用，有很好的插件支持  
+可以直接下载，也可以选择从源码编译，更能根据需要选择插件  
+
+- 下载:https://downloads.immortalwrt.org
+- 源码:https://github.com/immortalwrt/immortalwrt
+
+可以添加[turboacc](https://github.com/mufeng05/turboacc)插件,加速网络
+
+**记住配置科学上网环境**
+
+### 编译步骤
+
+- 不要用root权限执行，会找不到固件
+
+1. 推荐Ubuntu，可以选择ssh，Arch滚动更新只能编译最新的25.12版本  
+我选择虚拟机搭建，RAM 4G+，ROM 50G, CPU 4核心   
+编译依赖查看ImmortalWrt源码readme文件  
+
+```
+sudo apt update -y
+sudo apt full-upgrade -y
+sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+  bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
+  g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
+  libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev \
+  libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano \
+  ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils \
+  python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs \
+  upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd
+```
+2. 克隆源码
+
+终端运行以下代码
+
+```
+git clone -b v24.10.6 --depth=1 --single-branch --filter=blob:none https://github.com/immortalwrt/immortalwrt
+cd immortalwrt
+```
+
+3. 更新并安装软件包
+
+依次输入
+
+```
+./scripts/feeds update -a
+./scripts/feeds install -a
+```
+
+4. 编译型号、工具等配置
+
+输入
+
+```
+make menuconfig
+```
+
+出现界面
+![编译主界面](/assets/images/openwrt_1st/make_menuconfig.png "编译主界面")
+
+**Target System**: MediaTek Ralink MIPS  
+**Subtarget**: MT7621 based boards  
+**Target Profile**: Xiaomi Mi Router 3G  
+**Target Images**:![镜像选择](/assets/images/openwrt_1st/images.png "")  
+**LUCI**——>**Applications**——>**luci-app-mwan3**  
+
+退出保存
+
+5. 开始编译
+
+输入
+
+```
+make download -j4 V=s
+make -j4 V=s
+```
+
+make download进行预编译，加快make速度，-j后数字为参与线程，V=s显示详细信息  
+第一次建议单线程编译，虽然我没那么做  
+如果无报错，可以在 /immortalwrt/bin/targets 中找到固件  
+
+恭喜你，编译了自己的OpenWrt系统  
+
+## 刷机教程
+
+刷机教程参考此视频
+<iframe width="100%" height="468"
+  src="//player.bilibili.com/player.html?bvid=BV1TRirBWEeo&p=1&autoplay=0"
+  scrolling="no" border="0" frameborder="no"
+  framespacing="0" allowfullscreen="true">
+</iframe>
+
+# 宽带聚合
+
+## 前提条件
+
+- 两个及以上的宽带账号
+- mwan3负载均衡插件
+- ssh
+
+## 聚合教程
+
+### 建立虚拟网卡
+
+1. 连接路由器ssh，输入
+
+```
+ip link
+```
+
+查找wan物理网口
+![网卡](/assets/images/openwrt_1st/ip_link.png "指令效果")
+我这里是wan@eth0网口
+
+2. 创建虚拟网口
+
+- 来到路由器web界面，选择**网络**——>**接口**，删除当前所有的wan口
+- 选择上方**设备**选项，点击左下角**添加设备配置...**
+- 建立虚拟网口，**MAC地址**要手动设置一个
+![vwan1st](/assets/images/openwrt_1st/vwan1st.png "")
+- 返回上方**接口**界面，点击左下角**添加新接口**，按图设置
+![网口添加](/assets/images/openwrt_1st/vwan2nd.png "网口添加")
+![防火墙规则设置](/assets/images/openwrt_1st/vwan3rd.png "防火墙规则")
+![DHCP设置](/assets/images/openwrt_1st/vwan4th.png "DHCP设置")
+![DHCP设置](/assets/images/openwrt_1st/vwan5th.png "网关跃点设置")
+- 网口添加后会自动获取上游IP
+![成功效果](/assets/images/openwrt_1st/vwan6th.png)
+### 负载均衡
+
+- 来到**网络**——>**MultiWAN管理器**，
+- 在**接口**界面添加网口，选择启用和公共DNS服务器进行在线检测
+![添加接口](/assets/images/openwrt_1st/mwan1.png)
+- 在**成员**界面添加虚拟wan口，跃点数和权重全部设置为**1**
+![添加成员](/assets/images/openwrt_1st/mwan2.png)
+- 在**策略**界面添加balanced策略
+![balanced策略](/assets/images/openwrt_1st/mwan3.png)
+- 在**规则**界面添加负载均衡规则
+![all](/assets/images/openwrt_1st/mwan4.png)
+-设置后完成，在各虚拟网口登录账号，进入**状态**——>**MultiWAN管理器界面**查看在线情况
+![在线](/assets/images/openwrt_1st/mwan5.png "激活成功")
+
+现在可以用IDM等多线程下载器进行测速，有明显的叠加效果  
+但是浏览器直接下载会不变或减速，可以设置**mwan3规则**或者**多线程下载器**解决  
+
+### 校园网认证
+
+各个学校的校园网登录方式不同，我是网页登录，可以通过浏览器开发模式进行抓包解决  
+开发模式的网络界面下，登录过程会出现带有账号密码的GET请求，通过curl可进行登录
+
+```
+curl --interface vwan1 "账号1请求内容"
+curl --interface vwan2 "账号2请求内容"
+```
+
+在**系统**——>**启动项**——>**本地启动脚本**界面，在**exit 0**前添加curl指令，可实现开机自动登录
