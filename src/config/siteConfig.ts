@@ -139,15 +139,10 @@ export const siteConfig: SiteConfig = {
 		// 赞助页面开关
 		sponsor: false,
 		// 留言板页面开关，需要配置评论系统
-<<<<<<< HEAD
 		guestbook: false,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐，dev调试时只获取一页数据，build才会获取全部数据
 		bangumi: false,
-=======
-		guestbook: true,
-		// 番组计划页面开关，含追番、游戏、书籍和音乐
-		bangumi: true,
->>>>>>> upstream/master
+
 		// 相册页面开关
 		gallery: true,
 	},
