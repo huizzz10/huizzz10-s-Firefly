@@ -10,7 +10,7 @@ export const siteConfig: SiteConfig = {
 	title: "huizzz10博客",
 
 	// 站点副标题
-	subtitle: "huizzz10‘s blog",
+	subtitle: "huizzz10's blog",
 
 	// 站点 URL
 	site_url: "https://blog.huizzz10.ccwu.cc",
