@@ -7,13 +7,14 @@
 - ASUS TUF Gaming F16 FX607JV
 - HUAWEI MateBook D15 2020
 - HONOR Magic6Pro
-- HUAWEI nova7 
-- HONOR 20
-- OnePlus 6 
+- Xiaomi Pad 5 (Avium UI)  
+- ~~HUAWEI nova7~~ 
+- ~~HONOR 20~~
+- OnePlus 6 (DerpFest) 
 - Phicomm N1
-- Xiaomi Router 3G v1
+- Xiaomi R3G v1
 - COROS Pace4
-- HUAWEI GT Runner 
+- ~~HUAWEI GT Runner~~ 
 - Moondrop Space Travel 2 (Ultra)
 - Moondrop Quark2
 
