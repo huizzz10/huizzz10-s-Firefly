@@ -1,0 +1,31 @@
+---
+title: 使用sing-box构建代理服务
+published: 2026-07-16
+description: 其实我更喜欢Xray的
+image: api
+tags: [sing-box, 教程]
+category: 代理
+draft: false
+slug: sing-box-proxy
+---
+
+# 为什么要使用sing-box构建代理服务
+
+简单来说，Project X作者在2026年7月宣布停止对中国地区的支持  
+为了保证我代理的可靠性，sing-box是一个不错的选择  
+
+sing-box是一个高性能的代理服务框架，支持多种协议和功能，适合构建稳定的代理服务  
+在之前的使用中，sing-box表现很不错  
+
+- Android设备上使用KSU模块NetProxy，内存占用仅为26兆，性能表现非常出色
+- homeproxy插件是唯一能在我的小米R3G上运行的，其他插件都无法正常工作
+
+话不多说，记录一下我使用sing-box构建代理服务的过程
+
+# 准备工作
+
+1. 购买VPS
+2. 使用脚本搭建基础部分
+3. 进行sing-box的额外配置
+4. 修一个BUG
+5. 节点使用
