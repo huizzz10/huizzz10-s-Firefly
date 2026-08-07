@@ -1,12 +1,191 @@
 ---
 title: N1盒子OpenWrt编译打包
-published: 2026-07-16
+published: 2026-08-07
 description: Flippy大佬的arm64架构OpenWrt编译打包
 image: api
 tags: [OpenWrt, 教程]
-category: 开发
+category: 软路由
 draft: true
 slug: openwrt-2nd
 ---
 
-# 
+# 为什么使用N1盒子
+
+**因为贫穷，2G RAM+8G ROM，价格便宜，还可以刷机，玩法多，适合我**  
+
+# 编译大体流程
+
+1. openwrt的`arm64`虚拟机编译  
+2. 通过脚本进行适合N1盒子的固件打包  
+3. 刷机  
+
+# 虚拟机固件编译
+
+## 注意事项
+
+- 编译必须使用 Linux，Windows 可以使用 WSL2、虚拟机，macOS 我不清楚
+- 虚拟机固件编译不能使用 root 权限，建议使用普通用户编译
+- 打包脚本需要 root 权限
+
+## 源码选择
+
+- openwrt官方源码:https://github.com/openwrt/openwrt
+- ImmortalWrt源码:https://github.com/immortalwrt/immortalwrt.git
+- lienol的openwrt源码:https://github.com/Lienol/openwrt
+- lede源码：https://github.com/coolsnowwolf/lede
+
+我选择的是 ImmortalWrt，安装省时，同时在我的 Arch Linux 上编译不容易报错
+
+## 编译环境
+
+在 Arch Linux 上编译，可以通过 `AUR` 包安装编译依赖
+
+```bash
+paru -S openwrt-devel
+```
+
+其他发行版可以参考[OpenWrt官网](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem)
+
+## 编译步骤
+### clone源码
+
+```bash
+git clone -b <branch> --single-branch --filter=blob:none --depth=1 https://github.com/immortalwrt/immortalwrt
+```
+
+branch我选择25.12.1
+
+### 进入源码目录
+
+```bash
+cd immortalwrt
+``` 
+
+### 更新并安装软件包
+
+```bash
+./scripts/feeds update -a
+./scripts/feeds install -a
+```
+
+还要添加一个重要的软件包，`luci-app-amlogic`，方便对 N1盒子进行管理，有安装到 `eMMC`，内核更新，系统快照等功能  
+
+clone源码到`/package`目录下
+
+```bash
+git clone https://github.com/ophub/luci-app-amlogic.git /package
+```
+
+### 编译配置
+
+```bash
+make menuconfig
+```
+
+虚拟机基础要求：
+```
+Target System  ->  Arm SystemReady (EFI) compliant 
+Subtarget ->  64-bit (armv8) machines
+Target Profile  ->  Generic EFI boot
+Target Images  ->   tar.gz
+*** 必选软件包(基础依赖包，仅保证打出的包可以写入EMMC,可以在EMMC上在线升级，不包含具体的应用)： 
+Languages -> Perl               
+             ->  perl-http-date
+             ->  perlbase-file
+             ->  perlbase-getopt
+             ->  perlbase-time
+             ->  perlbase-unicode                              
+             ->  perlbase-utf8        
+Utilities -> Disc -> blkid、fdisk、lsblk、parted            
+          -> Filesystem -> attr、btrfs-progs(Build with zstd support)、chattr、dosfstools、
+                           e2fsprogs、f2fs-tools、f2fsck、lsattr、mkf2fs、xfs-fsck、xfs-mkfs
+          -> Compression -> bsdtar 或 p7zip(非官方源)、pigz
+          -> Shells  ->  bash         
+          -> gawk、getopt、losetup、tar、uuidgen
+          -> acpid (可选， 用于 `KVM` 虚拟机固件)
+```
+
+接下来可以在 `Luci > Applications` 中一定要选择 `luci-app-amlogic`，方便后续刷机和管理 `N1` 盒子  
+
+其他软件包可以根据自己的需求选择，建议不要选择太多，避免编译产生依赖冲突等报错  
+
+### 编译固件
+
+```bash
+make -j$(nproc) V=s
+```
+
+第一次编译建议为 `-j1`，追求速度可以选择 `-j$(nproc)`，这个指令可以自动获取CPU线程数  
+
+我使用的CPU是 `Intel i9-13980HX`，加入我需要的插件，大概半个小时编译完成  
+
+# 固件打包
+
+脚本来自https://github.com/unifreq/openwrt_packit  
+
+## 打包准备
+
+- Flippy大佬的预编译内核文件：在 https://t.me/openwrt_flippy 及 https://pan.baidu.com/s/1tY_-l-Se2qGJ0eKl7FZBuQ 提取码：846l
+- 脚本文件
+
+## 打包步骤
+### clone脚本源码与依赖安装
+
+首先切换到root权限，打开 `/opt` 目录，执行以下命令
+
+```bash
+su
+cd /opt
+git clone https://github.com/unifreq/openwrt_packit.git
+```
+
+依赖包括 `losetup`、`lsblk`（版本>=2.33）、`blkid`、`uuidgen`、`fdisk`、`parted`、`mkfs.vfat`、`mkfs.ext4`、`mkfs.btrfs` 等  
+
+存在情况查询，在指令后加 `--version` 可查询版本  
+
+```bash
+which losetup lsblk blkid uuidgen fdisk parted mkfs.vfat mkfs.ext4 mkfs.btrfs
+lsblk --version
+```
+
+
+### 移动预编译内核文件和虚拟机固件
+
+需要将Flippy大佬的预编译内核文件移动到 `/opt/kernel` 目录下，执行以下命令
+
+```bash
+mkdir /opt/kernel
+mv /path/to/your/downloaded/kernel/files/* /opt/kernel/
+```
+
+虚拟机固件移动到 `/opt/openwrt_packit` 目录下，并重命名为 `openwrt-armvirt-64-default-rootfs.tar.gz`，执行以下命令
+
+```bash
+mv /home/huizzz10/immortalwrt/bin/targets/armsr/armv8/immortalwrt-armsr-armv8-generic-rootfs.tar.gz /opt/openwrt_packit/openwrt-armvirt-64-default-rootfs.tar.gz
+```
+
+### 打包
+
+进入 `/opt/openwrt_packit` 目录，执行以下命令
+
+```bash
+cd /opt/openwrt_packit
+./mk_s905d_n1.sh
+```
+
+终端会提示产出在 `/opt/openwrt_packit/output` 目录下  
+
+如果报错，可能是依赖没有安装完全，问AI查漏补缺  
+
+# 刷机
+
+刷机教程很多，我就偷懒了，这里我建议参考这位B站up主的视频教程，视频还包含救砖教程  
+
+视频教程：
+<iframe width="100%" height="468"
+  src="//player.bilibili.com/player.html?bvid=BV1Sp4y1F7Pa&p=1&autoplay=0"
+  scrolling="no" border="0" frameborder="no"
+  framespacing="0" allowfullscreen="true">
+</iframe>
+
+> **使用DeepSeek进行润色**
