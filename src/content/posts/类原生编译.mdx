@@ -1,0 +1,381 @@
+---
+title: 类原生系统编译
+published: 2026-08-07
+description: 从零开始编译类原生系统的踩坑记录
+image: api
+tags: [类原生, 教程]
+category: 类原生
+draft: false
+slug: aosp-build
+---
+
+# 为什么要自己编译类原生系统
+
+**因为喜欢折腾：官方固件不再支持、运行太慢，而类原生系统轻快干净、还能自己定制，正好适合我手头的设备。**
+
+类原生系统是指接近 Android 开源项目（AOSP）原汁原味体验的 ROM，例如 LineageOS、crDroid、PixelOS 等。
+
+相比国内厂商深度定制的系统，它通常更流畅、更省电，还没有内置广告。
+
+既然可以直接下载别人打包好的固件，为什么还要自己编译？
+
+- 想要更干净的源码，剔除不想要的功能
+- 官方没有适配自己的设备，或者已停止维护
+- 想第一时间体验新版本 Android
+- 只是单纯想折腾，做个嘉豪（bushi
+
+话不多说，以下是我编译类原生系统的完整记录。
+
+# 类原生设备平台和项目选择
+
+## 设备选择：小米平板 5（代号 nabu）
+
+**我的选择要求**：
+
+- 便宜
+- 刷机救砖方法成熟
+- 官方系统已停止维护，正好适合折腾
+
+最后选择了搭载骁龙 860 的**小米平板 5**，它只有 Wi-Fi 版，没有蜂窝版，刷机折腾起来更省心。
+
+### 基本参数
+
+| 项目 | 参数 |
+| --- | --- |
+| 型号 | 小米平板 5（Xiaomi Pad 5） |
+| 代号 | nabu |
+| SoC | 骁龙 860（SM8150，骁龙 855 超频版） |
+| 内存 | 6GB LPDDR4x |
+| 存储 | 128GB / 256GB UFS 3.1 |
+| 屏幕 | 11 英寸 2.5K（2560×1600）120Hz LCD |
+| 电池 | 8720mAh，支持 33W 快充 |
+| 连接 | 仅 Wi-Fi（Wi-Fi 5），无蜂窝版 |
+| 配件 | 小米触控笔、键盘式保护壳 |
+
+### 刷机救砖
+
+酷安上关于小米平板 5 的资料很多，也有很多稳定的类原生 ROM 可以刷，适合折腾。
+
+## 类原生选择
+
+我选择的是 `Avium UI`。
+
+作为一个原教旨主义者，我更偏爱接近 `LineageOS`、没有复杂改动的项目，而 Avium UI 正合适。
+
+同时，作为国内发起的项目，它在语言和功能的本地化上都做得很不错。
+
+想详细了解该项目，可以去他们的[官网](https://aviumui.org/blog/3)。
+
+# 环境搭建
+
+## 构建准备
+
+### 硬件要求
+
+很多类原生系统都基于 LineageOS，这里参考其[构建指南](https://wiki.lineageos.org/emulator)，硬件要求如下：
+
+- LineageOS 17.1（Android 10）RAM 16GB + ROM 200GB
+- LineageOS 18.1（Android 11）RAM 32GB + ROM 300GB
+- LineageOS 21 及以上（Android 14）RAM 64GB + ROM 400GB
+
+我们要编译的是基于 LineageOS 23.2 的版本，所以需要 RAM 64GB + ROM 400GB 的硬件环境。
+
+我的设备是华硕天选 5 Pro 13980HX 版本，32GB + 2TB 的配置。
+
+内存不够的话，可以用 swap 扩容来解决。
+
+硬盘我分配为 1T 用于 Windows、1T 用于 Arch Linux，绰绰有余。
+
+### 环境搭建
+
+因为我只使用 Arch Linux 作为我的 Linux 发行版平台，所以无法提供其他发行版的命令指南，只能给出大致思路。
+
+下面只提供 Arch 的构建命令，有出入的地方请参考 [LineageOS 构建指南](https://wiki.lineageos.org/emulator) 和其他教程。
+
+AI 也要用起来！
+
+1. Swap 扩容
+
+我有 32GB 内存，但为了稳定构建，还是扩容了 50GB 的 swap。
+
+在 Arch 上，很多人使用 Btrfs 文件系统来防止滚动更新出问题，而开启 swap 需要关闭写时复制。
+
+```bash
+sudo rm -f /swapfile
+sudo touch /swapfile
+sudo chattr +C /swapfile 
+sudo dd if=/dev/zero of=/swapfile bs=1M count=51200 status=progress
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+swapon --show   
+free -h         
+```
+
+第三步用于关闭写时复制，最后两行可以检查是否成功。**注意：重启后 swap 会失效。**
+
+2. adb 和 fastboot
+
+这是刷机时需要的工具，大家肯定不陌生，安装命令为：
+
+```bash
+sudo pacman -S android-tools
+```
+
+3. 构建依赖
+
+构建所需的软件包，在 Arch 的 AUR 仓库里可以直接找到 `lineageos-devel`：
+
+```bash
+paru -S  lineageos-devel
+```
+
+> 不同版本对 Java 的支持不一样，请参考 LineageOS 的指南
+
+### 源码下载
+
+1. 设置 git 身份信息
+
+```bash
+git config --global user.email 你的GitHub邮箱
+git config --global user.name 你的GitHub用户名
+```
+
+2. 替换 repo 国内源
+
+这里使用北京外国语大学源，清华源会限速。
+
+```bash
+export REPO_URL='https://mirrors.bfsu.edu.cn/git/git-repo'
+```
+
+3. 替换 AOSP 国内源
+
+依旧使用北外源。
+
+```bash
+git config --global url.https://mirrors.bfsu.edu.cn/git/AOSP/.insteadof https://android.googlesource.com
+```
+
+国外的源我没有完全替换，因为其他部分出现了无法同步的情况。可以参考 B 站的一个[指南](https://www.bilibili.com/opus/1202999599271247890)，更好的解决方法还是科学上网。
+
+4. 创建目录，开始下载
+
+访问 Avium UI 的 GitHub 项目地址：https://github.com/AviumUI/android_manifests
+
+目前主分支为 Avium UI 16.2.1 版本，基于 Android 16 QPR2。
+
+创建并进入目录，初始化 repo，下载源码，命令如下：
+
+```bash
+mkdir -p android/avium
+cd android/avium
+repo init -u https://github.com/AviumUI/android_manifests -b avium-16.2 --git-lfs
+repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+```
+
+源码可能一次下载不完，可以多 `repo sync` 几次，也可以在初始化命令后面加 `--depth=1` 来加快速度。
+
+### 设备树
+
+这一步有点像「组装」，需要有你对应设备的专属文件，也就是设备树。
+
+首先，要找到 device 设备树，就得先知道你的设备代号（注意不是型号）。可以在这里找：https://wiki.lineageos.org/devices ，没有的话就得自己找了。
+
+我找到了这位开发者制作的设备树：https://github.com/dev-harsh1998/android_device_xiaomi_nabu ，他还提供了 vendor 和 kernel 的链接。
+
+先 clone 小米平板 5 的 device：
+
+```bash
+git clone https://github.com/dev-harsh1998/android_device_xiaomi_nabu device/xiaomi/nabu
+```
+
+打开文件夹查看 `lineage.dependencies`，可以看到还需要以下设备树：
+
+```bash
+[
+  {
+    "repository": "android_hardware_xiaomi",
+    "target_path": "hardware/xiaomi"
+  },
+  {
+    "repository": "android_kernel_xiaomi_nabu",
+    "target_path": "kernel/xiaomi/nabu"
+  }
+]
+```
+
+说明还缺少 hardware 和 kernel 文件，那就可以利用这位开发者留下的链接了。
+
+对于其他 LineageOS 支持的设备，可以查看其主页：https://github.com/LineageOS
+
+```bash
+git clone https://github.com/LineageOS/android_hardware_xiaomi.git hardware/xiaomi/nabu
+git clone https://github.com/crdroidandroid/android_kernel_xiaomi_sm8150.git kernel/xiaomi/nabu
+```
+
+同时还需要设备的 vendor 文件，也 clone 一下。与上面一样，对于 LineageOS 支持的设备，可以在这里找找：https://github.com/TheMuppets
+
+```bash
+git clone https://gitlab.com/dev-harsh1998/android_vendor_xiaomi_nabu.git vendor/xiaomi/nabu
+```
+
+### GMS
+
+参考 Avium UI 的 README，可以把以下内容添加到 `lineage_xxx.mk`、`device.mk` 或等效的 mk 文件中。
+
+我这里是在 `device/xiaomi/nabu` 目录下的 `lineage_nabu.mk`：
+
+```bash
+# 选择是否将当前时、分、秒添加到版本号中
+AVIUM_VERSION_APPEND_TIME_OF_DAY ?= false
+# 构建者名称
+AVIUM_MAINTAINER ?= Unknown
+
+# Soc型号
+AVIUM_SETTINGS_SOC_MODEL_NAME ?= Unknown
+# 设备代号
+AVIUM_SETTINGS_DEVICE_CODENAME ?= Unknown
+
+# 选择是否开启gms
+WITH_GMS ?= false
+# LatinIMEGooglePrebuilt
+# 仅在构建非gms版本时起作用
+# 在gms版本上会使用gms中的Gboard
+TARGET_INCLUDE_GOOGLEIME ?= false
+TARGET_GOOGLEIME_OVERRIDE_IME ?= false
+
+# 将此配置指定为true来开启欺骗 Prop，
+# 用于隐藏 bootloader 解锁状态
+AVIUM_FORCE_SET_FAKE_PROP ?= false
+
+# 通常在 Android 16 QPR2 上，模糊已经默认启用
+# 将 TARGET_FORCE_ENABLE_BLUR 指定为true来强制开启模糊
+TARGET_FORCE_ENABLE_BLUR ?= false
+```
+
+设置 GMS 后，记得用下面这个命令下载 GMS 的编译文件：
+
+```bash
+avium get_gms
+```
+
+### KernelSU（root）
+
+这里我咨询了小米平板 5 的前维护人员 @Neokoni。
+
+我使用的内核已经集成了 KernelSU Next，需要在内核文件里开启。参考模板在 `kernel/xiaomi/nabu/drivers/kernelsu/Kconfig` 中，也可以让 AI 帮你写；修改提示在 `device/xiaomi/nabu/BoardConfig.mk` 中。
+
+我修改的是 `kernel/xiaomi/nabu/arch/arm64/configs/vendor/sm8150-perf_defconfig`：
+
+```bash
+# ============================================
+# KernelSU + SUSFS 完整配置
+# ============================================
+CONFIG_KSU=y
+CONFIG_KSU_MANUAL_HOOK=y
+# CONFIG_KSU_DEBUG is not set
+# CONFIG_KSU_DISABLE_MANAGER is not set
+# CONFIG_KSU_DISABLE_POLICY is not set
+# CONFIG_KSU_ALLOWLIST_WORKAROUND is not set
+CONFIG_KSU_SUSFS=y
+CONFIG_KSU_SUSFS_SUS_PATH=y
+CONFIG_KSU_SUSFS_SUS_MOUNT=y
+CONFIG_KSU_SUSFS_SUS_KSTAT=y
+CONFIG_KSU_SUSFS_TRY_UMOUNT=y
+CONFIG_KSU_SUSFS_SPOOF_UNAME=y
+# CONFIG_KSU_SUSFS_ENABLE_LOG is not set
+CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
+CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
+# CONFIG_KSU_SUSFS_OPEN_REDIRECT is not set
+CONFIG_KSU_SUSFS_SUS_MAP=y
+# CONFIG_KSU_SUSFS_SUS_MEMFD is not set
+```
+
+这样编译出来的 `boot.img` 就集成了 KernelSU Next。
+
+# 编译
+
+依次执行以下命令：
+
+```bash
+# 设置环境
+. build/envsetup.sh
+
+# 编译类型
+lunch lineage_$device-bp4a-user
+
+# 开始编译
+m bacon -j$(nproc --all)
+```
+
+构建类型有 `user`、`userdebug`、`eng` 三种，`$device` 替换为你的设备代号，我这里是 `nabu`。
+
+三种构建类型的区别如下：
+
+| 构建类型 | user（正式版） | userdebug（调试版） | eng / dev（工程版） |
+| --- | --- | --- | --- |
+| 定位 | 发布给最终用户 | 开发者日常使用/测试 | 内部开发调试 |
+| ADB 调试 | 默认关闭，需手动开启 | 默认开启 | 默认开启 |
+| adb root | ❌ 不可用 | ✅ 可用 | ✅ 完全 root |
+| SELinux | Enforcing（严格） | Enforcing | 宽松或关闭 |
+| 稳定性/性能 | 最好 | 中等 | 最差 |
+| 适用场景 | 发布 / 追求稳定 | 日常使用 + 调试 | 仅开发 |
+
+- **user**：和厂商正式固件一致，最干净稳定，没有 adb root
+- **userdebug**：默认开 ADB、支持 adb root，日常刷机最推荐
+- **eng（dev）**：权限全开、SELinux 宽松，性能和稳定性最差，只用于开发
+
+自己日常刷推荐 `userdebug`，发布给别人刷推荐 `user`，`eng` 就不建议了。
+
+接下来就等待产出，文件在 `out/target/product/nabu` 中。好好找找，遇到报错就丢给 AI 处理。
+
+# 刷机
+
+## 解锁 BootLoader
+
+我买的设备已经解开了 BL 锁，这部分就没法提供指南了。
+
+每个品牌和型号的解锁方式都不同，需要自己 Google。大致思路如下：
+
+- 开启 OEM 解锁
+- 解 BL 锁，清数据，重启
+- 打开 USB 调试
+
+## 进入 fastboot，刷写 img
+
+```bash
+adb devices
+adb reboot fastboot
+fastboot devices
+fastboot flash boot boot.img
+fastboot flash vbmeta vbmeta.img
+fastboot flash vendor_boot vendor_boot.img
+fastboot flash dtbo dtbo.img
+fastboot reboot recovery
+```
+
+## 进入 recovery，侧载 ROM 包
+
+先双清数据，选择 Factory reset > Format data/factory reset；然后在 recovery 中选择 Apply update > Apply from ADB，执行以下命令：
+
+```bash
+adb sideload /path/to/AviumUI-16.2.1-nabu-XXXXXXXX-Unofficial-GMS.zip
+```
+
+接下来会让你选择 YES or No，两者皆可，反正最后都要选择 Reboot system now。
+
+现在就等待开机即可。
+
+# 结束提醒
+
+现在的包是使用 test-key（测试密钥）签名的，无法使用 GMS 服务。签名教程可以参考：https://www.bilibili.com/opus/1219277422236532739
+
+# 感谢名单
+
+- [酱汁龙虾SauClawe](https://space.bilibili.com/410511739)
+- [Neokoni](https://github.com/neokoni)
+- [dev-harsh1998](https://github.com/dev-harsh1998)
+
+
+> **使用DeepSeek进行润色**
