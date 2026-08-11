@@ -90,12 +90,12 @@ make menuconfig
 ```
 
 出现界面
-![编译主界面](/assets/images/openwrt_1st/make_menuconfig.png "编译主界面")
+![编译主界面](../picture/openwrt_1st/make_menuconfig.png "编译主界面")
 
 **Target System**: MediaTek Ralink MIPS  
 **Subtarget**: MT7621 based boards  
 **Target Profile**: Xiaomi Mi Router 3G  
-**Target Images**:![镜像文件格式选择](/assets/images/openwrt_1st/images.png "")  
+**Target Images**:![镜像文件格式选择](../picture/openwrt_1st/images.png "")  
 **LUCI**--->**Applications**--->**luci-app-mwan3**  
 
 退出保存
@@ -144,7 +144,7 @@ ip link
 ```
 
 查找wan物理网口
-![网卡](/assets/images/openwrt_1st/ip_link.png "指令效果")
+![网卡](../picture/openwrt_1st/ip_link.png "指令效果")
 我这里是wan@eth0网口
 
 2. 创建虚拟网口
@@ -152,27 +152,27 @@ ip link
 - 来到路由器web界面，选择**网络**--->**接口**，删除当前所有的wan口
 - 选择上方**设备**选项，点击左下角**添加设备配置...**
 - 建立虚拟网口，**MAC地址**要手动设置一个
-![设备添加](/assets/images/openwrt_1st/vwan1st.png "")
+![设备添加](../picture/openwrt_1st/vwan1st.png "")
 - 返回上方**接口**界面，点击左下角**添加新接口**，按图设置
-![网口添加](/assets/images/openwrt_1st/vwan2nd.png "网口添加")
-![防火墙规则设置](/assets/images/openwrt_1st/vwan3rd.png "防火墙规则")
-![DHCP设置](/assets/images/openwrt_1st/vwan4th.png "DHCP设置")
-![别忘了网关跃点](/assets/images/openwrt_1st/vwan5th.png "网关跃点设置")
+![网口添加](../picture/openwrt_1st/vwan2nd.png "网口添加")
+![防火墙规则设置](../picture/openwrt_1st/vwan3rd.png "防火墙规则")
+![DHCP设置](../picture/openwrt_1st/vwan4th.png "DHCP设置")
+![别忘了网关跃点](../picture/openwrt_1st/vwan5th.png "网关跃点设置")
 - 网口添加后会自动获取上游IP
-![成功效果](/assets/images/openwrt_1st/vwan6th.png)
+![成功效果](../picture/openwrt_1st/vwan6th.png)
 ### 负载均衡
 
 - 来到**网络**--->**MultiWAN管理器**，
 - 在**接口**界面添加网口，选择启用和公共DNS服务器进行在线检测
-![添加接口](/assets/images/openwrt_1st/mwan1.png)
+![添加接口](../picture/openwrt_1st/mwan1.png)
 - 在**成员**界面添加虚拟wan口，跃点数和权重全部设置为**1**
-![添加成员](/assets/images/openwrt_1st/mwan2.png)
+![添加成员](../picture/openwrt_1st/mwan2.png)
 - 在**策略**界面添加balanced策略
-![balanced策略](/assets/images/openwrt_1st/mwan3.png)
+![balanced策略](../picture/openwrt_1st/mwan3.png)
 - 在**规则**界面添加负载均衡规则
-![规则设置](/assets/images/openwrt_1st/mwan4.png)
+![规则设置](../picture/openwrt_1st/mwan4.png)
 - 设置后完成，在各虚拟网口登录账号，进入**状态**——>**MultiWAN管理器界面**查看在线情况
-![网口在线](/assets/images/openwrt_1st/mwan5.png "激活成功")
+![网口在线](../picture/openwrt_1st/mwan5.png "激活成功")
 
 现在可以用IDM等多线程下载器进行测速，有明显的叠加效果  
 但是浏览器直接下载会不变或减速，可以设置**mwan3规则**或者**多线程下载器**解决  

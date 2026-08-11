@@ -47,7 +47,6 @@
 
 - **GitHub**:[huizzz10](https://github.com/huizzz10)
 - **Email**:[dinghuiliao4@gmail.com](mailto:dinghuiliao4@gmail.com)
-- **QQ**：[3089736016](https://qm.qq.com/q/f7Ir5x96Ks)
 - **TG**：[@huizzz01](https://t.me/huizzz01)
 
 
