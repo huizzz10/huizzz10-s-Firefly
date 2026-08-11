@@ -106,13 +106,13 @@ export const siteConfig: SiteConfig = {
 		// 留言板页面开关，需要配置评论系统
 		guestbook: true,
 		// 番组计划页面开关，含追番、游戏、书籍和音乐
-		bangumi: true,
+		bangumi: false,
 		// VNDB页面开关。
-		vndb: true,
+		vndb: false,
 		// 相册页面开关
 		gallery: false,
 		// 追番页面开关
-		anime: false,
+		anime: true,
 		// 动态页面开关
 		dynamic: true,
 		// 书签导航页面开关
@@ -261,7 +261,7 @@ export const siteConfig: SiteConfig = {
 		// Bilibili 配置
 		bilibili: {
 			// 你的 Bilibili 用户 UID
-			uid: "38932988",
+			uid: "513245485",
 		},
 		// TMDB 配置（可选，需要翻墙）
 		// tmdb: {
