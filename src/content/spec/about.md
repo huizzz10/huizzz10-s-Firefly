@@ -17,6 +17,7 @@
 - ~~HUAWEI GT Runner~~ 
 - Moondrop Space Travel 2 (Ultra)
 - Moondrop Quark2
+- Moondrop CHU3
 
 ## 🛠️ 关于本站
 

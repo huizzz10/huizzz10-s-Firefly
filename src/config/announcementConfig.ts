@@ -1,8 +1,8 @@
 import type { AnnouncementConfig } from "../types/announcementConfig";
 
 export const announcementConfig: AnnouncementConfig = {
-	// 公告标题
-	title: "公告",
+	// 公告标题，留空则走i18n默认标题
+	title: "",
 
 	// 公告内容
 	content: "欢迎来到我的博客！我是一名师范学生，没有那么专业，这个博客建立的目的是记录自己的生活和折腾计算机的经验。",
