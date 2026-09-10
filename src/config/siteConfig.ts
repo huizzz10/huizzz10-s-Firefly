@@ -18,15 +18,15 @@ const pages = resolvePageToggles({
 	// ── 我的 (My) ──────────────────────────────────
 
 	// 动态页面开关
-	dynamic: true,
+	dynamic: false,
 	// 项目展示页开关
-	projects: true,
+	projects: false,
 	// 相册页面开关
 	gallery: false,
 	// 书签导航页面开关
-	booknav: true,
+	booknav: false,
 	// 哔哩哔哩追番页面开关
-	bilibili: false,
+	bilibili: true,
 	// 番组计划页面开关
 	bangumi: false,
 	// VNDB页面开关
@@ -37,7 +37,7 @@ const pages = resolvePageToggles({
 	// ── 关于 (About) ──────────────────────────────────
 
 	// 打赏页面开关
-	sponsor: true,
+	sponsor: false,
 });
 
 export const siteConfig: SiteConfig = {
@@ -280,7 +280,7 @@ export const siteConfig: SiteConfig = {
 	// ── Bilibili配置 ──────────────────────────────────
 	bilibili: {
 		// 你的 Bilibili 用户 UID
-		uid: "38932988",
+		uid: "513245485",
 	},
 
 	// ── 番组计划bangumi配置 ──────────────────────────────────
@@ -325,22 +325,6 @@ export const siteConfig: SiteConfig = {
 		apiToken: "",
 		// NSFW 处理："off" 不过滤 | "blur" 仅模糊封面 | "hide" 隐藏条目
 		nsfw: "hide",
-	},
-
-	// 追番配置（Bilibili + TMDB）
-	anime: {
-		// Bilibili 配置
-		bilibili: {
-			// 你的 Bilibili 用户 UID
-			uid: "513245485",
-		},
-		// TMDB 配置（可选，需要翻墙）
-		// tmdb: {
-		//   // TMDB API 密钥
-		//   apiKey: "your_tmdb_api_key",
-		//   // TMDB 列表 ID
-		//   listId: "your_list_id",
-		// },
 	},
 
 	// ── 图像优化配置 ──────────────────────────────────
