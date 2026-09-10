@@ -51,5 +51,11 @@ export const profileConfig: ProfileConfig = {
 			url: "https://t.me/huizzz01",
 			showName: false,
 		},
+		{
+			name: "Atom",
+			icon: "fa7-solid:atom",
+			url: "/atom/",
+			showName: false,
+		},
 	],
 };
