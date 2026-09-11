@@ -1,0 +1,286 @@
+---
+title: Arduino开发代码手册
+published: 2026-09-11
+description: 工具书
+image: api
+tags: [Arduino]
+category: Arduino
+draft: false
+slug: arduino-code-manual
+---
+
+# 前言
+
+这是一份**工具书**式的手册，用于记录 Arduino 开发中常用的代码和函数含义。
+
+写给自己查，也写给刚入门的你。内容会随着我的学习不断补充。
+
+**阅读方式：** 不需要从头背到尾，用到哪查哪即可。左侧目录可以快速跳转。
+
+# 一、基础结构
+
+Arduino 程序的骨架只有两个函数，**缺一不可**：
+
+```cpp
+void setup() {
+  // 上电后只运行一次
+  // 用来初始化：设置引脚模式、启动串口、连接 WiFi 等
+}
+
+void loop() {
+  // setup() 执行完后，这里会无限循环执行
+  // 用来写主逻辑：读传感器、控制电机、刷新屏幕等
+}
+```
+
+| 函数 | 运行次数 | 作用 |
+| --- | --- | --- |
+| `setup()` | 1 次 | 初始化配置，只跑一遍 |
+| `loop()` | 无限次 | 主循环，不停地跑 |
+
+# 二、数字电平：HIGH 和 LOW
+
+这是新手最容易迷惑的点，先讲清楚。
+
+Arduino 的数字引脚只有两种状态，用 **HIGH（高电平）** 和 **LOW（低电平）** 表示：
+
+| 常量 | 实际电压 | 含义 | 通俗理解 |
+| --- | --- | --- | --- |
+| `HIGH` | 5V（UNO）或 3.3V（ESP32 等） | 高电平 | 开、通、1、亮 |
+| `LOW` | 0V | 低电平 | 关、断、0、灭 |
+
+需要注意几点：
+
+- `HIGH` / `LOW` 是 Arduino 内部定义好的**常量**，它们的值分别是 `1` 和 `0`。所以 `digitalWrite(13, HIGH)` 和 `digitalWrite(13, 1)` 效果一样，但**推荐写 `HIGH`/`LOW`**，可读性更好。
+- `HIGH` 的电压取决于开发板。UNO 是 5V，ESP32/ESP8266 是 3.3V，**不要混用**，否则可能烧坏 3.3V 的器件。
+- 如果引脚被配置为 `INPUT_PULLUP`（内部上拉），那么**不接任何东西时读到的是 `HIGH`**，按下接地的按钮才读到 `LOW`——这和直觉相反，是高频踩坑点。
+
+# 三、数字 I/O 函数
+
+## pinMode() —— 设置引脚模式
+
+使用引脚前必须声明它是输入还是输出。
+
+```cpp
+pinMode(LED_BUILTIN, OUTPUT);  // 板载 LED 引脚设为输出
+pinMode(2, INPUT);             // 引脚 2 设为输入
+pinMode(3, INPUT_PULLUP);      // 引脚 3 设为输入，并启用内部上拉电阻
+```
+
+| 模式 | 含义 | 适用场景 |
+| --- | --- | --- |
+| `OUTPUT` | 输出模式 | 驱动 LED、继电器、蜂鸣器 |
+| `INPUT` | 输入模式 | 读按钮、开关（引脚悬空时读数不稳定） |
+| `INPUT_PULLUP` | 输入 + 内部上拉 | 读按钮（**最常用**，省一个外部电阻） |
+
+## digitalWrite() —— 写数字电平
+
+让引脚输出 `HIGH` 或 `LOW`，**前提是引脚已设为 `OUTPUT`**。
+
+```cpp
+digitalWrite(13, HIGH);  // 引脚 13 输出高电平 → 点亮 LED
+delay(1000);             // 等待 1000 毫秒（1 秒）
+digitalWrite(13, LOW);   // 引脚 13 输出低电平 → 熄灭 LED
+delay(1000);
+```
+
+> 上面这段就是经典的“LED 闪烁”，也是最经典的第一个例程。
+
+## digitalRead() —— 读数字电平
+
+读取输入引脚当前是 `HIGH` 还是 `LOW`，返回值可与 `HIGH` / `LOW` 比较。
+
+```cpp
+int buttonState = digitalRead(2);  // 读取引脚 2 的电平
+
+if (buttonState == HIGH) {
+  // 引脚是高电平
+}
+```
+
+搭配 `INPUT_PULLUP` 的典型写法（**按钮按下读 `LOW`**）：
+
+```cpp
+pinMode(2, INPUT_PULLUP);
+
+void loop() {
+  if (digitalRead(2) == LOW) {  // 按下按钮
+    digitalWrite(13, HIGH);
+  } else {
+    digitalWrite(13, LOW);
+  }
+}
+```
+
+# 四、时间与延时
+
+## delay() —— 阻塞延时
+
+```cpp
+delay(500);  // 暂停 500 毫秒
+```
+
+单位是**毫秒**。缺点是它是**阻塞**的——程序会卡在这里，期间什么都干不了（比如读不了传感器、按钮会失灵）。
+
+## millis() —— 获取运行时间
+
+返回开发板从上电到现在经过的毫秒数（`unsigned long` 类型）。
+
+它是**非阻塞**定时的基础，适合需要“一边闪灯一边干活”的场景：
+
+```cpp
+unsigned long lastTime = 0;
+const unsigned long interval = 1000;
+
+void loop() {
+  // millis() 溢出时会归零，用减法比较可以避开溢出 bug
+  if (millis() - lastTime >= interval) {
+    lastTime = millis();
+    digitalWrite(13, !digitalRead(13));  // 翻转 LED 状态
+  }
+  // 这里可以继续执行其他任务，不会被卡住
+}
+```
+
+> 提示：`millis()` 返回的是 `unsigned long`，比较时间差时**一定用 `millis() - lastTime >= interval` 这种减法写法**，别写成 `millis() >= lastTime + interval`，否则约 49 天后溢出会出错。
+
+# 五、模拟量
+
+## 模拟输入：analogRead()
+
+读取 0-5V（或 0-3.3V）之间的电压，返回 **0-1023** 的整数（10 位 ADC）。
+
+```cpp
+int value = analogRead(A0);          // 读取 A0 引脚，范围 0~1023
+float voltage = value * (5.0 / 1023.0);  // 换算成实际电压（V）
+```
+
+> ESP32 的 ADC 是 12 位，`analogRead()` 返回 **0~4095**，换算时除以 4095。
+
+## 模拟输出：analogWrite()
+
+用 PWM 实现“模拟输出”，**并不是真正的模拟电压**，而是快速开关产生的等效效果。
+
+```cpp
+analogWrite(9, 128);  // 引脚 9 输出约 50% 占空比的 PWM
+```
+
+- 取值 **0~255**：`0` 相当于一直 `LOW`，`255` 相当于一直 `HIGH`。
+- 常用于调光、调速：`analogWrite(9, 0)` 全灭，`analogWrite(9, 255)` 全亮。
+- **不是所有引脚都支持 PWM**。UNO 上带 `~` 标记的引脚（3、5、6、9、10、11）才支持。
+
+# 六、串口通信
+
+串口是调试的最强工具，用来在电脑上看变量的值。
+
+```cpp
+void setup() {
+  Serial.begin(9600);  // 初始化串口，波特率 9600（要与串口监视器一致）
+}
+
+void loop() {
+  Serial.print("Value: ");   // 打印内容，不换行
+  Serial.println(123);       // 打印内容并换行
+  delay(1000);
+}
+```
+
+| 函数 | 作用 |
+| --- | --- |
+| `Serial.begin(baud)` | 初始化串口，常用 `9600`、`115200` |
+| `Serial.print(x)` | 输出内容，不换行 |
+| `Serial.println(x)` | 输出内容并换行 |
+| `Serial.available()` | 返回缓冲区中可读的字节数 |
+| `Serial.read()` | 读取一个字节 |
+| `Serial.write(x)` | 发送原始字节 |
+
+# 七、常用常量与变量类型
+
+## 常量
+
+| 常量 | 含义 |
+| --- | --- |
+| `HIGH` / `LOW` | 高电平 / 低电平 |
+| `INPUT` / `OUTPUT` / `INPUT_PULLUP` | 引脚模式 |
+| `LED_BUILTIN` | 板载 LED 对应的引脚号，跨板通用 |
+| `true` / `false` | 布尔真值 |
+
+## 变量类型
+
+| 类型 | 范围 | 说明 |
+| --- | --- | --- |
+| `int` | -32768 ~ 32767 | 最常用，16 位 |
+| `unsigned int` | 0 ~ 65535 | 无符号 |
+| `long` | ±21 亿 | 32 位 |
+| `unsigned long` | 0 ~ 42 亿 | `millis()` 的返回类型 |
+| `float` | 约 ±3.4e38 | 浮点数，精度约 6~7 位 |
+| `double` | 与 `float` 相同 | 在 AVR 上不区分 |
+| `bool` | `true` / `false` | 布尔值 |
+| `byte` | 0 ~ 255 | 8 位无符号 |
+| `char` | 单个字符 | 如 `'A'` |
+| `String` | 字符串对象 | 方便但占内存，慎用于小内存板子 |
+| `const` | 常量修饰符 | `const int LED = 13;` 值不可改 |
+
+# 八、运算符速查
+
+| 符号 | 含义 | 例子 |
+| --- | --- | --- |
+| `=` | 赋值 | `int a = 5;` |
+| `==` | 等于（比较） | `if (a == 5)` |
+| `!=` | 不等于 | `if (a != 5)` |
+| `&&` | 逻辑与 | `a > 0 && b > 0` |
+| `\|\|` | 逻辑或 | `a > 0 \|\| b > 0` |
+| `!` | 逻辑非 | `!flag` |
+| `!`（前缀） | 按位取反，常用于翻转 | `digitalWrite(13, !digitalRead(13))` |
+| `%` | 取余 | `a % 2 == 0` 判断偶数 |
+| `++` / `--` | 自增 / 自减 | `i++` |
+| `+=` / `-=` | 累加 / 累减 | `a += 1` |
+
+# 九、完整例程：按键控制 LED
+
+把前面学的串起来：
+
+```cpp
+const int buttonPin = 2;   // 按钮接引脚 2
+const int ledPin = 13;     // LED 接引脚 13
+
+int buttonState = 0;       // 保存按钮状态
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP);  // 启用内部上拉
+  Serial.begin(9600);
+}
+
+void loop() {
+  buttonState = digitalRead(buttonPin);  // 读按钮
+
+  // 上拉模式下：按下 = LOW，松开 = HIGH
+  if (buttonState == LOW) {
+    digitalWrite(ledPin, HIGH);  // 按下 → 点亮
+    Serial.println("Button pressed");
+  } else {
+    digitalWrite(ledPin, LOW);   // 松开 → 熄灭
+  }
+}
+```
+
+# 十、踩坑记录
+
+- **引脚悬空读数乱跳**：输入引脚没接东西时会读到随机值，用 `INPUT_PULLUP` 或外接下拉电阻解决。
+- **上拉逻辑是反的**：`INPUT_PULLUP` 下，按键按下读 `LOW`，不是 `HIGH`。
+- **忘写 `pinMode`**：不声明模式直接 `digitalWrite`，可能没反应（默认是 `INPUT`）。
+- **`delay()` 卡住一切**：需要同时处理多个任务时，改用 `millis()` 非阻塞写法。
+- **波特率不一致**：`Serial.begin(9600)` 和串口监视器设置不一致，会显示乱码。
+- **5V 接了 3.3V 器件**：可能烧坏器件，接线前先确认器件电压。
+- **PWM 引脚不对**：UNO 只有 3、5、6、9、10、11 支持 `analogWrite()`。
+
+# 待补充
+
+- [ ] 中断（`attachInterrupt()`）
+- [ ] 常用传感器（DHT11、超声波 HC-SR04）
+- [ ] 舵机控制（`Servo` 库）
+- [ ] I2C / SPI 通信
+- [ ] 常用库安装与使用
+
+> **使用DeepSeek生成，用于查阅**
