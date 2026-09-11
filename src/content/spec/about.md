@@ -7,7 +7,7 @@
 - ASUS TUF Gaming F16 FX607JV
 - HUAWEI MateBook D15 2020
 - HONOR Magic6Pro
-- Xiaomi Pad 5 (AviumUI)  
+- Xiaomi Pad 5 (uwuAOSP)  
 - ~~HUAWEI nova7~~ 
 - ~~HONOR 20~~
 - OnePlus 6 (uwuAOSP) 
