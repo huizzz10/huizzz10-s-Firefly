@@ -15,9 +15,11 @@
 - Xiaomi R3G v1
 - COROS Pace4
 - ~~HUAWEI GT Runner~~ 
+- Moondrop Starfield III
+- Moondrop Pudding
 - Moondrop Space Travel 2 (Ultra)
-- Moondrop Quark2
 - Moondrop CHU3
+- ~~Moondrop Quark2~~
 
 ## 🛠️ 关于本站
 
