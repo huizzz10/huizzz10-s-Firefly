@@ -5,7 +5,7 @@ description: 工具书
 image: api
 tags: [Arduino]
 category: Arduino
-draft: true
+draft: false
 slug: arduino-code-manual
 ---
 
@@ -265,7 +265,7 @@ void loop() {
 }
 ```
 
-# 十、踩坑记录
+# 十、踩坑注意
 
 - **引脚悬空读数乱跳**：输入引脚没接东西时会读到随机值，用 `INPUT_PULLUP` 或外接下拉电阻解决。
 - **上拉逻辑是反的**：`INPUT_PULLUP` 下，按键按下读 `LOW`，不是 `HIGH`。
@@ -274,13 +274,5 @@ void loop() {
 - **波特率不一致**：`Serial.begin(9600)` 和串口监视器设置不一致，会显示乱码。
 - **5V 接了 3.3V 器件**：可能烧坏器件，接线前先确认器件电压。
 - **PWM 引脚不对**：UNO 只有 3、5、6、9、10、11 支持 `analogWrite()`。
-
-# 待补充
-
-- [ ] 中断（`attachInterrupt()`）
-- [ ] 常用传感器（DHT11、超声波 HC-SR04）
-- [ ] 舵机控制（`Servo` 库）
-- [ ] I2C / SPI 通信
-- [ ] 常用库安装与使用
 
 > **使用DeepSeek生成，用于查阅**
